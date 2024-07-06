@@ -1,6 +1,7 @@
 node_modules
 .vscode
 .idea
+*.tar
 /ui/dist/
 /config.yaml
 /ui-config.yaml
