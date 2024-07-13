@@ -94,8 +94,8 @@ func GetUsersConvs(ctx context.Context, db *sql.DB, userId uid.ID) ([]*Convs, er
 	return convs, nil
 }
 
-// GetConv returns the conv with the given user ids
-func GetConv(ctx context.Context, db *sql.DB, user1ID, user2ID uid.ID) (*Convs, error) {
+// GetConvUserIDs returns the conv with the given user ids
+func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID uid.ID) (*Convs, error) {
 	convs, err := getConvs(ctx, db, "WHERE convs.user1_id = ? AND convs.user2_id = ?", user1ID, user2ID)
 	if err != nil {
 		return nil, err
@@ -198,7 +198,6 @@ type Message struct {
 	SenderID   uid.ID          `json:"senderId"`
 	ReceiverID uid.ID          `json:"receiverId"`
 	SentAt     time.Time       `json:"sentAt"`
-	SeenAt     sql.NullTime    `json:"seenAt"`
 	Seen       bool            `json:"seen"`
 	Body       msql.NullString `json:"body"`
 }
@@ -211,7 +210,6 @@ func getMessages(ctx context.Context, db *sql.DB, where string, args ...any) ([]
 		"msg.receiver_id",
 		"msg.sent_at",
 		"msg.seen",
-		"msg.seen_at",
 		"msg.body",
 	}, []string{}, where)
 
@@ -231,7 +229,7 @@ func getMessages(ctx context.Context, db *sql.DB, where string, args ...any) ([]
 			&msg.ReceiverID,
 			&msg.SentAt,
 			&msg.Seen,
-			&msg.Seen,
+			&msg.Body,
 		)
 		if err != nil {
 			return nil, err
@@ -248,7 +246,7 @@ func getMessages(ctx context.Context, db *sql.DB, where string, args ...any) ([]
 
 // GetConvMessages returns all the messages that belong to the given conv
 func GetConvMessages(ctx context.Context, db *sql.DB, convId uid.ID) ([]*Message, error) {
-	msgs, err := getMessages(ctx, db, "WHERE msg.conv_id = ?", convId)
+	msgs, err := getMessages(ctx, db, "WHERE msg.conv_id = ? ORDER BY MS", convId)
 	if err != nil {
 		return nil, err
 	}
@@ -268,4 +266,36 @@ func GetMessage(ctx context.Context, db *sql.DB, id uid.ID) (*Message, error) {
 		return nil, httperr.NewNotFound("msg-not-found", "Message not found.")
 	}
 	return msgs[0], nil
+}
+
+// CreateMessage creates a new message with the given parameters and inserts it
+// into the table.
+func CreateMessage(ctx context.Context, db *sql.DB, convId, senderId, receiverId uid.ID, body string) (*Message, error) {
+	var msg Message
+	msg.ID = uid.New()
+	msg.ConvID = convId
+	msg.SenderID = senderId
+	msg.ReceiverID = receiverId
+	msg.Body = msql.NewNullString(body)
+
+	query, args := msql.BuildInsertQuery("msg", []msql.ColumnValue{
+		{Name: "id", Value: msg.ID},
+		{Name: "conv_id", Value: msg.ConvID},
+		{Name: "sender_id", Value: msg.SenderID},
+		{Name: "receiver_id", Value: msg.ReceiverID},
+		{Name: "body", Value: msg.Body},
+	})
+	_, err := db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil && msql.IsErrDuplicateErr(err) {
+		return nil, &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "duplicate-row",
+			Message:    "This message already exists.",
+		}
+	}
+	return &msg, nil
 }
