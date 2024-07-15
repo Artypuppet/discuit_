@@ -1,6 +1,6 @@
 create table if not exists convs (
 	id binary (12) not null,
-	user1_id binary (12) not null,
+	user1_id binary (12) not null, /*Always the creater of the conversation.*/
     user2_id binary (12) not null,
 	started_at datetime not null default current_timestamp(),
     last_message binary (12) null,

@@ -46,6 +46,11 @@ func (s *Server) handleConvs(w *responseWriter, r *request) error {
 		}
 	}
 
+	// payload := struct{
+	// 	conv *core.Convs `json:"newConv"`
+	// 	convs []*core.Convs	`json:"allConvs"`
+	// }{}
+
 	if r.req.Method == "POST" {
 		// Create a new convs.
 
@@ -80,7 +85,7 @@ func (s *Server) handleConvs(w *responseWriter, r *request) error {
 		return nil
 	}
 
-	convs, err := core.GetUsersConvs(r.ctx, s.db, user.ID)
+	convs, err := core.GetUsersConvs(r.ctx, s.db, &user.ID)
 	if err != nil {
 		return err
 	}
@@ -107,14 +112,24 @@ func (s *Server) handleConvMessages(w *responseWriter, r *request) error {
 
 // /api/users/{username}/convs/conn [GET]
 func (s *Server) handleChat(w *responseWriter, r *request) error {
+	wupgrade := w.w
+	if u, ok := w.w.(interface{ Unwrap() http.ResponseWriter }); ok {
+		wupgrade = u.Unwrap()
+	}
+	
+	r.req.Header.Del("Sec-WebSocket-Extensions")
+	log.Println("In websocket handler.")
 	username := r.muxVar("username")
+	log.Println(username)
 	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 	if err != nil {
+		log.Println("Error while getting the user.")
 		return err
 	}
 
 	// upgrade the connection
-	ws, err := upgrader.Upgrade(w, r.req, r.req.Header)
+	ws, err := upgrader.Upgrade(wupgrade, r.req, r.req.Header)
+	log.Println("Error while upgrading the websocket", err.Error())
 	if err != nil {
 		return err
 	}

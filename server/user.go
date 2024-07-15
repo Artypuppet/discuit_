@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -108,11 +109,13 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 
 // /api/_initial [GET]
 func (s *Server) initial(w *responseWriter, r *request) error {
+	log.Println("in Initial")
 	var err error
 	response := struct {
 		ReportReasons  []core.ReportReason `json:"reportReasons"`
 		User           *core.User          `json:"user"`
 		Lists          []*core.List        `json:"lists"`
+		Convs          []*core.Convs       `json:"convs"`
 		Communities    []*core.Community   `json:"communities"`
 		NoUsers        int                 `json:"noUsers"`
 		BannedFrom     []uid.ID            `json:"bannedFrom"`
@@ -156,6 +159,11 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			return err
 		} else if lists != nil {
 			response.Lists = lists
+		}
+		if convs, err := core.GetUsersConvs(r.ctx, s.db, r.viewer); err != nil {
+			return err
+		} else if convs != nil {
+			response.Convs = convs
 		}
 	}
 

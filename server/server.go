@@ -173,7 +173,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/users/{username}/convs", s.withHandler(s.handleConvs)).Methods("GET", "POST")
 	r.Handle("/api/users/{username}/convs/{convID}", s.withHandler(s.handleConvMessages)).Methods("GET")
-	r.Handle("/api/users/{username}/convs/conn", s.withHandler(s.handleChat)).Methods("GET")
+	r.Handle("/api/users/{username}/conn", s.withHandler(s.handleChat)).Methods("GET")
 
 	r.Handle("/api/push_subscriptions", s.withHandler(s.pushSubscriptions)).Methods("POST")
 
@@ -212,7 +212,26 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	} else {
 		s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
 	}
+	listRoutes(r)
 	return s, nil
+}
+
+// Function to list all routes
+func listRoutes(r *mux.Router) {
+	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			log.Println("Error getting path template:", err)
+			return err
+		}
+		methods, err := route.GetMethods()
+		if err != nil {
+			log.Println("Error getting methods:", err)
+			return err
+		}
+		log.Printf("Registered route: %s %s", methods, path)
+		return nil
+	})
 }
 
 func (s *Server) openLoggers() {
@@ -295,18 +314,22 @@ func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 func (s *Server) withHandler(h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("In handler.")
 		ses, err := s.sessions.Get(r)
 		if err != nil {
 			s.writeError(w, r, err)
 			return
 		}
+		fmt.Println("After session Get.")
 
 		s.setInitialCookies(w, r, ses)
 
+		fmt.Println("After setting initial cookies.")
 		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses); err != nil { // could be changed by a csrf attack request
 			log.Printf("Error updating last seen value: %v\n", err)
 		}
 
+		fmt.Println("Updated user last seen.")
 		adminKey := r.URL.Query().Get("adminKey")
 		skipCsrfCheck := s.config.CSRFOff || (s.config.AdminAPIKey != "" && s.config.AdminAPIKey == adminKey) || r.Method == "GET"
 		if !skipCsrfCheck {
@@ -317,11 +340,13 @@ func (s *Server) withHandler(h handler) http.Handler {
 				return
 			}
 		}
-
+		fmt.Println("After csrf check")
 		if err = h(&responseWriter{w: w}, newRequest(r, ses)); err != nil {
+			fmt.Println("Caught error:", err.Error())
 			s.writeError(w, r, err)
 			return
 		}
+		fmt.Println("After handler.")
 	})
 }
 

@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"encoding/json"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -112,6 +113,7 @@ func (rs *RedisStore) Get(r *http.Request) (*Session, error) {
 	}
 
 	if err := json.Unmarshal([]byte(res), &s.Values); err != nil {
+		log.Println("Error while unmarshalling the id in session.Get()")
 		return nil, err
 	}
 
