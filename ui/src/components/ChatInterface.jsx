@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import Sidebar from './ChatSideBar';
+import React, { useState, useEffect } from 'react';
+import Sidebar from './Sidebar';
 import {
     MainContainer,
     ChatContainer,
@@ -13,25 +13,54 @@ import { convAdded, convsAdded, convMessageAdded } from '../slices/conversations
 
 
 const ChatInterface = () => {
-    const dispatch = useDispatch();
-    const user = useSelector((state) => state.main.user)
-    const convs = useSelector((state) => state.main.convs)
-    dispatch(convsAdded(convs))
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [socket, setSocket] = useState(null);
 
-    return (
-        <div style={{ display: "flex", height: "100vh" }}>
-            <Sidebar />
-            <MainContainer>
-                <ChatContainer>
-                    <MessageList>
-                        <Message model={{ message: "Hello, how can I help you?", sentTime: "just now", sender: "Support" }} />
-                        <Message model={{ message: "I need assistance with my account.", sentTime: "just now", sender: "User" }} />
-                    </MessageList>
-                    <MessageInput placeholder="Type your message here..." />
-                </ChatContainer>
-            </MainContainer>
-        </div>
-    );
+  useEffect(() => {
+    if (selectedConversation) {
+      fetch(`/api/conversations/${selectedConversation.id}/messages`)
+        .then(response => response.json())
+        .then(data => setMessages(data));
+
+      const newSocket = new WebSocket('ws://your-websocket-server');
+      newSocket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        setMessages(prevMessages => [...prevMessages, message]);
+      };
+      setSocket(newSocket);
+
+      return () => newSocket.close();
+    }
+  }, [selectedConversation]);
+
+  const sendMessage = (message) => {
+    const newMessage = {
+      content: message,
+      conversationId: selectedConversation.id,
+      sender: 'currentUser', // we need to replace this value witht the user id
+      sentTime: new Date().toISOString()
+    };
+    socket.send(JSON.stringify(newMessage));
+  };
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      <Sidebar setSelectedConversation={setSelectedConversation} />
+      {selectedConversation && (
+        <MainContainer>
+          <ChatContainer>
+            <MessageList>
+              {messages.map((msg, index) => (
+                <Message key={index} model={{ message: msg.content, sentTime: msg.sentTime, sender: msg.sender }} />
+              ))}
+            </MessageList>
+            <MessageInput placeholder="Type your message here..." onSend={sendMessage} />
+          </ChatContainer>
+        </MainContainer>
+      )}
+    </div>
+  );
 };
 
 export default ChatInterface;
