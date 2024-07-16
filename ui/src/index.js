@@ -62,6 +62,10 @@ root.render(
   </Provider>
 );
 
+if (process.env.NODE_ENV !== 'production' && module.hot) {
+  module.hot.accept('./App', renderApp);
+}
+
 if (isDeviceIos()) {
   // enable pull to refresh only for iOS devices
   document.documentElement.style.overscrollBehaviorY = 'contain';

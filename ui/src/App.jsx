@@ -35,6 +35,7 @@ import {
   toggleSidebarOpen,
   userLoggedIn,
 } from './slices/mainSlice';
+import { convsAdded } from './slices/mainSlice';
 import About from './pages/About';
 import Guidelines from './pages/Guidelines';
 import Sidebar from './components/Sidebar';
@@ -57,6 +58,7 @@ import PushNotifications from './PushNotifications';
 import { List, Lists } from './pages/Lists';
 import SaveToListModal from './components/SaveToListModal';
 import { getDevicePreference } from './pages/Settings/devicePrefs';
+import { WebSocketProvider } from './WebSocketContext';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -67,7 +69,7 @@ window.appData.historyLength = 0;
 
 const App = () => {
   const dispatch = useDispatch();
-
+    console.log("hello")
   // Note that window.navigator.onLine cannot always be trusted. It's false
   // value can be trusted, but it's true value cannot be.
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
@@ -114,6 +116,7 @@ const App = () => {
 
         if (initial.user) {
           dispatch(userLoggedIn(initial.user));
+          dispatch(convsAdded(initial.convs))
         }
         dispatch(sidebarCommunitiesUpdated(initial.communities));
         dispatch(reportReasonsUpdated(initial.reportReasons));
@@ -230,7 +233,7 @@ const App = () => {
   }
 
   return (
-    <>
+    <WebSocketProvider isLoggedIn={loggedIn}>
       <Helmet
         defaultTitle={`${notifsNewCountStr} ${CONFIG.siteName}`}
         titleTemplate={titleTemplate}
@@ -273,7 +276,7 @@ const App = () => {
         open={createCommunityOpen}
         onClose={() => dispatch(createCommunityModalOpened(false))}
       />
-    </>
+    </WebSocketProvider>
   );
 };
 

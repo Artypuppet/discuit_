@@ -18,6 +18,7 @@ const initialState = {
   },
   notifications: initialNotifications,
   chatOpen: false,
+  convs: [], // convs are automatically added with the 'main/initialValuesAdded' case
   sidebarCommunities: [],
   allCommunities: {
     items: [],
@@ -369,6 +370,12 @@ export default function mainReducer(state = initialState, action) {
         settingsChanged: state.settingsChanged + 1,
       };
     }
+    case 'main/convsAdded': {
+      return {
+        ...state,
+        convs: action.payload,
+      };
+    }
     default:
       return state;
   }
@@ -656,4 +663,10 @@ export const saveToListModalClosed = () => {
 
 export const settingsChanged = () => {
   return { type: 'main/settingsChanged' };
+};
+
+// TODO check if this ends up getting used.
+// this is used to add convs. Might not be used
+export const convsAdded = (convs) => {
+  return { type: 'main/convsAdded', payload: convs };
 };

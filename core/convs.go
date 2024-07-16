@@ -81,21 +81,18 @@ func getConvs(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Co
 	return convs, nil
 }
 
-// GetUsersConvs returns all the convs of the user. The convs are sorted in
-// by
-func GetUsersConvs(ctx context.Context, db *sql.DB, userId uid.ID) ([]*Convs, error) {
-	convs, err := getConvs(ctx, db, "WHERE convs.user1_id = ? OR convs.user2_id = ? ORDER BY convs.last_updated DESC", userId)
+// GetUsersConvs returns all the convs of the user. The convs are sorted by the date
+// they were started in descending order.
+func GetUsersConvs(ctx context.Context, db *sql.DB, userId *uid.ID) ([]*Convs, error) {
+	convs, err := getConvs(ctx, db, "WHERE convs.user1_id = ? OR convs.user2_id = ? ORDER BY convs.started_at DESC", userId, userId)
 	if err != nil {
 		return nil, err
-	}
-	if len(convs) == 0 {
-		return nil, httperr.NewNotFound("convs-not-found", "Conversations not found.")
 	}
 	return convs, nil
 }
 
 // GetConvUserIDs returns the conv with the given user ids
-func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID uid.ID) (*Convs, error) {
+func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID *uid.ID) (*Convs, error) {
 	convs, err := getConvs(ctx, db, "WHERE convs.user1_id = ? AND convs.user2_id = ?", user1ID, user2ID)
 	if err != nil {
 		return nil, err
