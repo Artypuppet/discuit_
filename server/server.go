@@ -314,22 +314,18 @@ func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 func (s *Server) withHandler(h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("In handler.")
 		ses, err := s.sessions.Get(r)
 		if err != nil {
 			s.writeError(w, r, err)
 			return
 		}
-		fmt.Println("After session Get.")
 
 		s.setInitialCookies(w, r, ses)
 
-		fmt.Println("After setting initial cookies.")
 		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses); err != nil { // could be changed by a csrf attack request
 			log.Printf("Error updating last seen value: %v\n", err)
 		}
 
-		fmt.Println("Updated user last seen.")
 		adminKey := r.URL.Query().Get("adminKey")
 		skipCsrfCheck := s.config.CSRFOff || (s.config.AdminAPIKey != "" && s.config.AdminAPIKey == adminKey) || r.Method == "GET"
 		if !skipCsrfCheck {
@@ -340,13 +336,12 @@ func (s *Server) withHandler(h handler) http.Handler {
 				return
 			}
 		}
-		fmt.Println("After csrf check")
+
 		if err = h(&responseWriter{w: w}, newRequest(r, ses)); err != nil {
 			fmt.Println("Caught error:", err.Error())
 			s.writeError(w, r, err)
 			return
 		}
-		fmt.Println("After handler.")
 	})
 }
 

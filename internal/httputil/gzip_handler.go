@@ -103,12 +103,12 @@ func AcceptEncoding(h http.Header, encoding string) bool {
 	return false
 }
 
-type gzipResponseWriter struct {
+type GzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
 }
 
-func (w gzipResponseWriter) Write(p []byte) (int, error) {
+func (w GzipResponseWriter) Write(p []byte) (int, error) {
 	return w.Writer.Write(p)
 }
 
@@ -122,6 +122,6 @@ func GzipHandler(h http.Handler) http.Handler {
 		w.Header().Set("Content-Encoding", "gzip")
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
-		h.ServeHTTP(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
+		h.ServeHTTP(GzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
 	})
 }

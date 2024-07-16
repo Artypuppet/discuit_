@@ -3,12 +3,15 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/httputil"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/websocket"
@@ -113,23 +116,21 @@ func (s *Server) handleConvMessages(w *responseWriter, r *request) error {
 // /api/users/{username}/convs/conn [GET]
 func (s *Server) handleChat(w *responseWriter, r *request) error {
 	wupgrade := w.w
-	if u, ok := w.w.(interface{ Unwrap() http.ResponseWriter }); ok {
-		wupgrade = u.Unwrap()
+	gzipResponseWriter, ok := wupgrade.(httputil.GzipResponseWriter)
+	if !ok {
+		return errors.New("Response Writer is not GzipResponseWriter.")
 	}
-	
+	fmt.Printf("final Response Writer type: %T\n", gzipResponseWriter.ResponseWriter)
+
 	r.req.Header.Del("Sec-WebSocket-Extensions")
-	log.Println("In websocket handler.")
 	username := r.muxVar("username")
-	log.Println(username)
 	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 	if err != nil {
-		log.Println("Error while getting the user.")
 		return err
 	}
 
 	// upgrade the connection
-	ws, err := upgrader.Upgrade(wupgrade, r.req, r.req.Header)
-	log.Println("Error while upgrading the websocket", err.Error())
+	ws, err := upgrader.Upgrade(gzipResponseWriter.ResponseWriter, r.req, r.req.Header)
 	if err != nil {
 		return err
 	}
