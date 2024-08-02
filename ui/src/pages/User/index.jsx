@@ -96,6 +96,20 @@ const User = () => {
     dispatch(feedUpdated(feedUrl, newItems, next));
   };
 
+  // Call useSelector at the top level
+  const convs = useSelector((state) => {
+    console.log(state);
+    return state.convs.convsList;
+  });
+
+  let hasConversation = false;
+  // used to determine whether the viewer already has a conversation
+  convs.forEach((conv) => {
+    if (conv.user1Id === user.id || conv.user2Id === user.id) {
+      hasConversation = true;
+    }
+  });
+
   const [feedLoading, setFeedLoading] = useState(feed ? 'loaded' : 'loading');
   useEffect(() => {
     if (feed && user) {
@@ -257,6 +271,21 @@ const User = () => {
       </div>
     );
   }
+
+  // if the viewer does not have a conversation, this function creates a temporary convs object
+  // and navigates the user to the conversation page by passing the new conv objects as a prop.
+  const navigateToConversation = () => {
+    const newConv = {
+      starterId: viewer.id,
+      targetId: user.id,
+      user1Id: viewer.id,
+      user2Id: user.id,
+      username1: viewer.username,
+      username2: user.username,
+      startedAt: new Date(),
+    };
+    history.push('/chat', { state: newConv });
+  };
 
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
@@ -511,6 +540,7 @@ const User = () => {
               {viewer.id !== user.id && (
                 <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
               )}
+              {!hasConversation && <button onClick={navigateToConversation}>Chat</button>}
               {viewerAdmin && (
                 <>
                   {viewer.id !== user.id && (

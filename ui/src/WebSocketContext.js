@@ -25,7 +25,7 @@ export const WebSocketProvider = ({ children, isLoggedIn }) => {
       ws.onerror = (error) => {
         console.error('WebSocket error', error);
       };
-    } 
+    }
   }, [isLoggedIn, user]);
 
   return <WebSocketContext.Provider value={socket}>{children}</WebSocketContext.Provider>;

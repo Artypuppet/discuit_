@@ -2,21 +2,11 @@ const initialState = {
   convs: {
     /*
         ["convId"]: {
-            id: string
-            user1Id: string
-            username1: string
-            user2Id: string
-            username2: string
-            startedAt: Date
-            lastMessage: string
-            lastUpdated: Date
-            LastSeenByUser1: Date
-            LastSeenByUser2: Date
-            numMessages: number
             messages: []
         }
         */
   },
+  convsList: [],
 };
 
 const typeConvsAdded = 'convs/convsAdded';
@@ -42,19 +32,21 @@ export default function convsReducer(state = initialState, action) {
   switch (action.type) {
     case typeConvsAdded: {
       const convs = action.payload;
-      convs.forEach((element) => {
-        element.message = [];
-      });
-      const convIdPairs = convs.map((conv) => {
-        const id = conv.id;
-        return { id: conv };
-      });
-      return {
-        ...state,
-        convs: {
-          ...convIdPairs,
-        },
-      };
+
+      if (convs.length != 0) {
+        convIdPairs = convs.reduce((o, conv) => {
+          o[conv.id] = [];
+          return o;
+        });
+        return {
+          ...state,
+          convs: {
+            ...convIdPairs,
+          },
+          convsList: convs,
+        };
+      }
+      return state;
     }
     case typeConvMessageAdded: {
       const { convId, message } = action.payload;
@@ -62,10 +54,7 @@ export default function convsReducer(state = initialState, action) {
         ...state,
         convs: {
           ...state.convs,
-          [convId]: {
-            ...state.convs[convId],
-            messages: [...state.convs[convId].message, message],
-          },
+          [convId]: [...state.convs[(convId, message)]],
         },
       };
     }
@@ -76,10 +65,9 @@ export default function convsReducer(state = initialState, action) {
         ...state,
         convs: {
           ...state.convs,
-          [convId]: {
-            ...conv,
-          },
+          [convId]: [],
         },
+        convsList: [...state.convsList, conv],
       };
     }
     default:

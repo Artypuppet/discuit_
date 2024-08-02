@@ -132,7 +132,6 @@ func CreateConv(ctx context.Context, db *sql.DB, starter, target *User) (*Convs,
 	conv.Username1 = starter.Username
 	conv.User2ID = target.ID
 	conv.Username2 = target.Username
-	// TODO Remove StartedBy
 	conv.NumMessages = 0
 
 	query, args := msql.BuildInsertQuery("convs", []msql.ColumnValue{

@@ -1,7 +1,8 @@
 const { merge } = require('webpack-merge');
 const common = require('./webpack.common.js');
 const webpack = require('webpack');
-const path = require('path');
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = (env, argv) => {
   const proxyHost = process.env.PROXY_HOST;
@@ -20,15 +21,9 @@ module.exports = (env, argv) => {
       filename: '[name].[contenthash].js',
     },
     devtool: 'inline-source-map',
-    devServer: {
-      // contentBase: './dist',
-      historyApiFallback: true,
-      proxy: !!proxyHost ? proxy : undefined,
-    },
     plugins: [
-      // Plugin for hot module replacement
-
-      new webpack.HotModuleReplacementPlugin(),
+      new CleanWebpackPlugin(),
+      new ReactRefreshWebpackPlugin(), // Add React Refresh plugin for hot reloading
     ],
     devServer: {
       static: './dist',

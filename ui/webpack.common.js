@@ -89,7 +89,7 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: ['@babel/preset-react'],
-            plugins: ['@babel/plugin-transform-runtime'],
+            plugins: ['@babel/plugin-transform-runtime', require.resolve('react-refresh/babel')],
           },
         },
       },

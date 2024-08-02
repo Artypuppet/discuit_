@@ -50,17 +50,21 @@ const logAppError = (error, info) => {
 const container = document.getElementById('root');
 const root = createRoot(container);
 
-root.render(
-  <Provider store={store}>
-    <HelmetProvider>
-      <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
-        <Router>
-          <App />
-        </Router>
-      </ErrorBoundary>
-    </HelmetProvider>
-  </Provider>
-);
+const renderApp = () => {
+  root.render(
+    <Provider store={store}>
+      <HelmetProvider>
+        <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
+          <Router>
+            <App />
+          </Router>
+        </ErrorBoundary>
+      </HelmetProvider>
+    </Provider>
+  );
+};
+
+renderApp();
 
 if (process.env.NODE_ENV !== 'production' && module.hot) {
   module.hot.accept('./App', renderApp);

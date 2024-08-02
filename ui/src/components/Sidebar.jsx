@@ -195,6 +195,21 @@ const Sidebar = ({ isMobile = false }) => {
             </svg>
             <span>Guidelines</span>
           </Link>
+          <Link to="/chat" className="sidebar-item with-image" onClick={handleClose}>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 6C21 4.34315 19.6569 3 18 3H6C4.34315 3 3 4.34315 3 6V14C3 15.6569 4.34315 17 6 17H18L21 20V6Z"
+                fill="currentColor"
+              />
+            </svg>
+            <span>Chat</span>
+          </Link>
           <Link to="/terms" className="sidebar-item with-image is-m" onClick={handleClose}>
             <svg
               xmlns="http://www.w3.org/2000/svg"

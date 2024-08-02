@@ -1,24 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { ConversationList, Conversation } from "@chatscope/chat-ui-kit-react";
+import { ConversationList, Conversation } from '@chatscope/chat-ui-kit-react';
 
-const Sidebar = ({ setSelectedConversation }) => {
-  const [conversations, setConversations] = useState([]);
-
-  useEffect(() => {
-    fetch('/api/conversations')
-      .then(response => response.json())
-      .then(data => setConversations(data));
-  }, []);
-
+const ChatSidebar = ({
+  setSelectedConversation,
+  conversations,
+  user,
+  newConv,
+  setNewConv,
+  messages,
+}) => {
+  // this function removes any newConv that doesn't have any messages
+  const removeNewConv = (convo) => {
+    if (newConv && messages.length == 0) {
+      for (let i = 0; i < conversations.length; i++) {
+        if (newConv.user1Id == conversations[i] && newConv.user2Id == conversations[i].user2Id) {
+          conversations.splice(i, 1);
+          setNewConv(null);
+          break;
+        }
+      }
+    }
+    setSelectedConversation(convo);
+  };
   return (
-    <div style={{ width: "300px", backgroundColor: "#2f3136", color: "white" }}>
+    <div style={{ width: '300px', backgroundColor: '#2f3136', color: 'white' }}>
       <ConversationList>
-        {conversations.map(convo => (
-          <Conversation 
-            key={convo.id} 
-            name={convo.name} 
-            info={convo.lastMessage} 
-            onClick={() => setSelectedConversation(convo)}
+        {conversations.map((convo, index) => (
+          <Conversation
+            key={index}
+            name={`${user.id == convo.user1Id ? convo.username2 : convo.username1}`}
+            info={convo.startedAt}
+            onClick={() => removeNewConv(convo)}
           />
         ))}
       </ConversationList>
@@ -26,5 +38,4 @@ const Sidebar = ({ setSelectedConversation }) => {
   );
 };
 
-export default Sidebar;
-
+export default ChatSidebar;

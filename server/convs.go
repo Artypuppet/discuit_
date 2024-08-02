@@ -17,6 +17,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type PingPong struct {
+	Type string        `json:"type"`
+	Msg  *core.Message `json:"msg"`
+	Conv *core.Convs   `json:"conv"`
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
@@ -26,6 +32,27 @@ var upgrader = websocket.Upgrader{
 	// development server to here.
 	// For now, we'll do no checking and just allow any connection
 	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
+func (s *Server) publishNewConv(c *core.Convs) {
+	conn := s.redisPool.Get()
+	defer conn.Close()
+
+	message := PingPong{
+		Type: "New Conv",
+		Conv: c,
+	}
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshalling message: %v", err)
+		return
+	}
+
+	// user2 is always the target user.
+	_, err = conn.Do("PUBLISH", c.User2ID.String(), data)
+	if err != nil {
+		log.Printf("Error publishing message: %v", err)
+	}
 }
 
 // /api/users/{username}/convs [GET, POST]
@@ -83,6 +110,8 @@ func (s *Server) handleConvs(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
+		// notify the target user about the new conv.
+		s.publishNewConv(conv)
 
 		w.writeJSON(conv)
 		return nil
@@ -113,7 +142,7 @@ func (s *Server) handleConvMessages(w *responseWriter, r *request) error {
 	return nil
 }
 
-// /api/users/{username}/convs/conn [GET]
+// /api/users/{username}/conn [GET]
 func (s *Server) handleChat(w *responseWriter, r *request) error {
 	wupgrade := w.w
 	gzipResponseWriter, ok := wupgrade.(httputil.GzipResponseWriter)
@@ -153,14 +182,15 @@ func (s *Server) writeMessages(ctx context.Context, user *core.User, conn *webso
 	for {
 		switch v := psc.Receive().(type) {
 		case redis.Message:
-			var msg core.Message
-			err := json.Unmarshal(v.Data, &msg)
+
+			message := PingPong{}
+			err := json.Unmarshal(v.Data, &message)
 			if err != nil {
 				log.Printf("Error unmarshalling message: %v", err)
 				break
 			}
 
-			err = conn.WriteJSON(msg)
+			err = conn.WriteJSON(message)
 			if err != nil {
 				log.Printf("Error writing message: %v", err)
 				break
@@ -212,7 +242,11 @@ func (s *Server) publishMessage(msg *core.Message) {
 	conn := s.redisPool.Get()
 	defer conn.Close()
 
-	data, err := json.Marshal(msg)
+	message := PingPong{
+		Type: "New Msg",
+		Msg:  msg,
+	}
+	data, err := json.Marshal(&message)
 	if err != nil {
 		log.Printf("Error marshalling message: %v", err)
 		return
