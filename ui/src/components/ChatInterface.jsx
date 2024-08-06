@@ -34,10 +34,12 @@ const ChatInterface = () => {
   }, [selectedConversation]);
 
   // set the selected conversation as the newConv.
-  if (newConv) {
-    setSelectedConversation(newConv);
-    dispatch(convAdded(newConv));
-  }
+  useEffect(() => {
+    if (newConv) {
+      setSelectedConversation(newConv);
+      dispatch(convAdded(newConv));
+    }
+  }, []);
 
   socket.onmessage = (event) => {
     const newMessage = event.data;
@@ -92,8 +94,9 @@ const ChatInterface = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="flex-container">
       <ChatSidebar
+        className="chat-sidebar"
         setSelectedConversation={setSelectedConversation}
         conversations={conversations}
         user={user}
@@ -102,26 +105,29 @@ const ChatInterface = () => {
         setNewConv={setNewConv}
       />
       {selectedConversation ? (
-        <MainContainer>
-          <ChatContainer>
-            <MessageList>
+        <MainContainer className="main-container">
+          <ChatContainer className="chat-container">
+            <MessageList className="message-list">
               {messages.map((msg, index) => (
                 <Message
                   key={index}
                   model={{
                     message: msg.body,
                     sentTime: msg.sentAt,
-                    sender: `${
+                    sender:
                       msg.senderId == selectedConversation.user1Id
                         ? selectedConversation.username1
-                        : selectedConversation.username2
-                    }`,
+                        : selectedConversation.username2,
                     direction: msg.senderId == user.id ? 1 : 0,
                   }}
                 />
               ))}
             </MessageList>
-            <MessageInput placeholder="Type your message here..." onSend={sendMessage} />
+            <MessageInput
+              className="message-input"
+              placeholder="Type your message here..."
+              onSend={sendMessage}
+            />
           </ChatContainer>
         </MainContainer>
       ) : (

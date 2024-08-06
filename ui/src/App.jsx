@@ -58,7 +58,6 @@ import { List, Lists } from './pages/Lists';
 import SaveToListModal from './components/SaveToListModal';
 import { getDevicePreference } from './pages/Settings/devicePrefs';
 import { WebSocketProvider } from './WebSocketContext';
-import ChatInterface from './components/ChatInterface';
 import { convsAdded } from './slices/conversationsSlice';
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -69,7 +68,6 @@ window.appData.historyLength = 0;
 
 const App = () => {
   const dispatch = useDispatch();
-  console.log('hello');
   // Note that window.navigator.onLine cannot always be trusted. It's false
   // value can be trusted, but it's true value cannot be.
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
@@ -304,7 +302,7 @@ const AppSwitch = () => {
           <Settings />
         </ProtectedRoute>
         <ProtectedRoute path="/chat">
-          <ChatInterface />
+          <Chat />
         </ProtectedRoute>
         <Route exact path="/login">
           <Login />

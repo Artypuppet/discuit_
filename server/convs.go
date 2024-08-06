@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
@@ -149,7 +149,6 @@ func (s *Server) handleChat(w *responseWriter, r *request) error {
 	if !ok {
 		return errors.New("Response Writer is not GzipResponseWriter.")
 	}
-	fmt.Printf("final Response Writer type: %T\n", gzipResponseWriter.ResponseWriter)
 
 	r.req.Header.Del("Sec-WebSocket-Extensions")
 	username := r.muxVar("username")
@@ -159,20 +158,20 @@ func (s *Server) handleChat(w *responseWriter, r *request) error {
 	}
 
 	// upgrade the connection
-	ws, err := upgrader.Upgrade(gzipResponseWriter.ResponseWriter, r.req, r.req.Header)
+	ws, err := upgrader.Upgrade(gzipResponseWriter.ResponseWriter, r.req, nil)
 	if err != nil {
 		return err
 	}
 
 	// starting go routines to read user's messages and to listen to messages froms others.
-	go s.writeMessages(r.ctx, user, ws)
-	go s.readMessages(r.ctx, user, ws)
+	go s.writeMessages(user, ws)
+	go s.readMessages(user, ws)
 	return nil
 }
 
 // writeMessages creates a redis subscription pool where users can send messages.
 // Then it listens for messages sent to it so that it can send them back to the user.
-func (s *Server) writeMessages(ctx context.Context, user *core.User, conn *websocket.Conn) {
+func (s *Server) writeMessages(user *core.User, conn *websocket.Conn) {
 	rconn := s.redisPool.Get()
 	defer conn.Close()
 
@@ -205,7 +204,7 @@ func (s *Server) writeMessages(ctx context.Context, user *core.User, conn *webso
 // readMessages reads the messages sent by the user. It saves them to the database before
 // publishing them to the appropriate target. If there's an error while reading the connection
 // we end the this function and send an ending message to writeMessages so that it can end as well.
-func (s *Server) readMessages(ctx context.Context, user *core.User, conn *websocket.Conn) {
+func (s *Server) readMessages(user *core.User, conn *websocket.Conn) {
 	for {
 		msgTemp := &struct {
 			ConvID     uid.ID `json:"convId"`
@@ -226,6 +225,9 @@ func (s *Server) readMessages(ctx context.Context, user *core.User, conn *websoc
 			s.publishEndMessage(user.ID, []byte("End"))
 			break
 		}
+		// Create a new context for the database operation
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		defer cancel()
 
 		msg, err := core.CreateMessage(ctx, s.db, msgTemp.ConvID, msgTemp.SenderID, msgTemp.ReceiverID, msgTemp.Body)
 		if err != nil {

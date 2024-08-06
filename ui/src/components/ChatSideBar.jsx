@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ConversationList, Conversation } from '@chatscope/chat-ui-kit-react';
+import {
+  ConversationList,
+  Conversation,
+  ConversationHeader,
+  SideBar,
+} from '@chatscope/chat-ui-kit-react';
 
 const ChatSidebar = ({
   setSelectedConversation,
@@ -23,15 +28,18 @@ const ChatSidebar = ({
     setSelectedConversation(convo);
   };
   return (
-    <div style={{ width: '300px', backgroundColor: '#2f3136', color: 'white' }}>
+    <div style={{ width: '300px', backgroundColor: '#2f3136' }}>
+      <ConversationHeader>
+        <ConversationHeader.Content>{user.username}</ConversationHeader.Content>
+      </ConversationHeader>
       <ConversationList>
         {conversations.map((convo, index) => (
           <Conversation
             key={index}
             name={`${user.id == convo.user1Id ? convo.username2 : convo.username1}`}
-            info={convo.startedAt}
+            lastActivityTime={convo.startedAt.toLocaleTimeString()}
             onClick={() => removeNewConv(convo)}
-          />
+          ></Conversation>
         ))}
       </ConversationList>
     </div>

@@ -35,7 +35,15 @@
             padding: var(--padding);
             display: flex;
             flex-direction: column;
-            .chat-main-contact {
+            .chat-main-contact-selected {
+                padding: 0.4rem;
+                cursor: pointer;
+                border-radius: var(--border-radius);
+                margin-bottom: 4px;
+                background: var(--color-lightgray);
+                
+            }
+            .chat-main-contact-unselected {
                 padding: 0.4rem;
                 cursor: pointer;
                 border-radius: var(--border-radius);

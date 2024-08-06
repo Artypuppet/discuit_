@@ -4,7 +4,7 @@ import MiniFooter from '../../components/MiniFooter';
 import Sidebar from '../../components/Sidebar';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
 import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlertError, chatOpenToggled } from '../../slices/mainSlice';
 import { MemorizedComment } from './Comment';
 import { MemorizedPostCard } from '../../components/PostCard/PostCard';
 import MarkdownBody from '../../components/MarkdownBody';
@@ -29,6 +29,7 @@ import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
 import BadgesList from './BadgesList';
 import SelectBar from '../../components/SelectBar';
+import { newConvAdded } from '../../slices/conversationsSlice';
 
 function formatFilterText(filter = '') {
   filter.toLowerCase();
@@ -96,20 +97,6 @@ const User = () => {
     dispatch(feedUpdated(feedUrl, newItems, next));
   };
 
-  // Call useSelector at the top level
-  const convs = useSelector((state) => {
-    console.log(state);
-    return state.convs.convsList;
-  });
-
-  let hasConversation = false;
-  // used to determine whether the viewer already has a conversation
-  convs.forEach((conv) => {
-    if (conv.user1Id === user.id || conv.user2Id === user.id) {
-      hasConversation = true;
-    }
-  });
-
   const [feedLoading, setFeedLoading] = useState(feed ? 'loaded' : 'loading');
   useEffect(() => {
     if (feed && user) {
@@ -144,6 +131,25 @@ const User = () => {
       }
     })();
   }, [username, url, feedUrl]);
+
+  // Call useSelector at the top level
+  const convs = useSelector((state) => {
+    console.log(state);
+    return state.convs.convsList;
+  });
+
+  const [hasConversation, setHasConversation] = useState(false);
+  // used to determine whether the viewer already has a conversation
+  useEffect(() => {
+    convs.forEach((conv) => {
+      if (user && (conv.user1Id === user.id || conv.user2Id === user.id)) {
+        setHasConversation(true);
+      }
+      if (!user || viewer.id === user.id) {
+        setHasConversation(true);
+      }
+    });
+  }, [user]);
 
   const [feedReloading, setFeedReloading] = useState(false);
   const fetchNextItems = async () => {
@@ -284,7 +290,8 @@ const User = () => {
       username2: user.username,
       startedAt: new Date(),
     };
-    history.push('/chat', { state: newConv });
+    dispatch(newConvAdded(newConv));
+    dispatch(chatOpenToggled());
   };
 
   const handleRenderItem = (item) => {

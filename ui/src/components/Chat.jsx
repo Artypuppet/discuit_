@@ -1,21 +1,122 @@
-import React, { useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useRef, useState } from 'react';
 import { chatOpenToggled } from '../slices/mainSlice';
+import { mfetch } from '../helper';
 import { ButtonClose } from './Button';
+import { convAdded, newConvAdded } from '../slices/conversationsSlice';
+import { useWebSocket } from '../WebSocketContext';
+import { isEmpty } from '../helper';
 
 const Chat = () => {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.main.user);
+  const conversations = useSelector((state) => state.convs.convsList);
+  const socket = useWebSocket();
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState('');
+  const newConv = useSelector((state) => {
+    console.log(state);
+    return state.convs.newConv;
+  });
+
+  useEffect(() => {
+    (async function () {
+      if (selectedConversation && isEmpty(newConv)) {
+        const resp = await fetch(`/api/users/${user.username}/convs/${selectedConversation.id}`);
+        const messages = await resp.json();
+        console.log(messages);
+        setMessages(messages);
+      }
+    })();
+  }, [selectedConversation]);
+
+  // set the selected conversation as the newConv.
+  useEffect(() => {
+    if (!isEmpty(newConv)) {
+      setSelectedConversation(newConv);
+      dispatch(convAdded(newConv));
+    }
+  }, []);
+
+  socket.onmessage = (event) => {
+    const newMessage = JSON.parse(event.data);
+    console.log(newMessage);
+    if (newMessage.type === 'New Conv') {
+      dispatch(convAdded(newMessage.conv));
+    } else if (newMessage.type === 'New Msg') {
+      setMessages((prevMessages) => [...prevMessages, newMessage.msg]);
+    }
+  };
+
+  const sendMessage = async (message) => {
+    // Since we remove the newConv if the user doesn't send a message, we can be sure that
+    // if the newConv is not null then the message sent has to belong to the newConv.
+    if (!isEmpty(newConv)) {
+      const postObj = {
+        method: 'POST', // Specify the request method as POST
+        headers: {
+          'Content-Type': 'application/json', // Specify the content type
+        },
+        body: JSON.stringify({ starterId: newConv.starterId, targetId: newConv.targetId }), // Convert the data to a JSON string
+      };
+      const resp = await mfetch(`api/users/${user.username}/convs`, postObj);
+      const conv = await resp.json(); // get the body which represents the new conv.
+
+      // remove the old newConv object.
+      for (let i = 0; i < conversations.length; i++) {
+        if (newConv.user1Id == conversations[i] && newConv.user2Id == conversations[i].user2Id) {
+          conversations.splice(i, 1);
+          break;
+        }
+      }
+      // update our conversations list
+      dispatch(convAdded(conv));
+      // setting selected conv to returned conv object.
+      setSelectedConversation(conv);
+      // set the newConv to null as this conv is in our database.
+      // done at last to avoid making a fetch call to get an empty list of conversations.
+      dispatch(newConvAdded(null));
+    }
+
+    const newMessage = {
+      convId: selectedConversation.id,
+      senderId: user.id,
+      receiverId:
+        user.id == selectedConversation.user1Id
+          ? selectedConversation.user2Id
+          : selectedConversation.user1Id,
+      body: message,
+    };
+    socket.send(JSON.stringify(newMessage));
+    setMessages([...messages, newMessage]);
+  };
+
+  const handleSend = async () => {
+    // Done asynchronously.
+    sendMessage(message);
+
+    // resetting the message;
+    setMessage('');
+  };
+
   const msgsRef = useRef(null);
   useEffect(() => {
     msgsRef.current.scrollTo(0, msgsRef.current.scrollHeight);
   }, []);
 
   const textareaRef = useRef(null);
-  const handleReplyInput = () => {
-    const height = textareaRef.current.scrollHeight;
-    textareaRef.current.style.height = `${height}px`;
+  //   const handleReplyInput = () => {
+  //     const height = textareaRef.current.scrollHeight;
+  //     textareaRef.current.style.height = `${height}px`;
+  //   };
+  const handleChange = (event) => {
+    setMessage(event.target.value);
   };
 
-  const dispatch = useDispatch();
+  const changeConversation = (selectedConv) => {
+    setSelectedConversation(selectedConv);
+  };
 
   return (
     <div className="chat-main">
@@ -25,48 +126,46 @@ const Chat = () => {
       </div>
       <div className="chat-main-content">
         <div className="chat-main-contacts">
-          <div className="chat-main-contact">@username</div>
-          <div className="chat-main-contact">@username</div>
-          <div className="chat-main-contact">@username</div>
-          <div className="chat-main-contact">@username</div>
-          <div className="chat-main-contact">@username</div>
+          {conversations.map((convo, index) => (
+            <button
+              className={
+                selectedConversation && convo.id === selectedConversation.id
+                  ? 'chat-main-contact-selected'
+                  : 'chat-main-contact-unselected'
+              }
+              key={index}
+              onClick={() => changeConversation(convo)}
+            >
+              {user.id == convo.user1Id ? convo.username2 : convo.username1}
+            </button>
+          ))}
         </div>
         <div className="chat-main-chat">
           <div ref={msgsRef} className="chat-main-msgs">
-            <div className="chat-msg">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg chat-msg-reply">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg chat-msg-reply">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg chat-msg-reply">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
-            <div className="chat-msg chat-msg-reply">
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            </div>
+            {selectedConversation &&
+              messages.map((message, index) => (
+                <div
+                  className={user.id == message.senderId ? 'chat-msg chat-msg-reply' : 'chat-msg'}
+                  key={index}
+                >
+                  {message.body}
+                </div>
+              ))}
           </div>
           <div className="chat-main-reply">
-            <textarea
-              ref={textareaRef}
-              name=""
-              id=""
-              rows="1"
-              onInput={handleReplyInput}
-            ></textarea>
-            <button className="button-main">Send</button>
+            {selectedConversation && (
+              <>
+                <textarea
+                  ref={textareaRef}
+                  rows="1"
+                  value={message}
+                  onChange={handleChange}
+                ></textarea>
+                <button className="button-main" disabled={!message.trim()} onClick={handleSend}>
+                  Send
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

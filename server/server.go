@@ -172,7 +172,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/notifications/{notificationID}", s.withHandler(s.deleteNotification)).Methods("DELETE")
 
 	r.Handle("/api/users/{username}/convs", s.withHandler(s.handleConvs)).Methods("GET", "POST")
-	r.Handle("/api/users/{username}/convs/{convID}", s.withHandler(s.handleConvMessages)).Methods("GET")
+	r.Handle("/api/users/{username}/convs/{convId}", s.withHandler(s.handleConvMessages)).Methods("GET")
 	r.Handle("/api/users/{username}/conn", s.withHandler(s.handleChat)).Methods("GET")
 
 	r.Handle("/api/push_subscriptions", s.withHandler(s.pushSubscriptions)).Methods("POST")

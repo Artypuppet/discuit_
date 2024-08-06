@@ -20,7 +20,7 @@ type Convs struct {
 	User2ID         uid.ID       `json:"user2Id"`
 	Username2       string       `json:"username2"` // Not in the table
 	StartedAt       time.Time    `json:"startedAt"`
-	LastMessage     uid.ID       `json:"lastMessage"`
+	LastMessage     uid.NullID   `json:"lastMessage"`
 	LastUpdated     sql.NullTime `json:"lastUpdated"`
 	LastSeenByUser1 sql.NullTime `json:"lastSeenByUser1"`
 	LastSeenByUser2 sql.NullTime `json:"lastSeenByUser2"`
@@ -64,6 +64,7 @@ func getConvs(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Co
 			&conv.Username2,
 			&conv.StartedAt,
 			&conv.LastMessage,
+			&conv.LastUpdated,
 			&conv.LastSeenByUser1,
 			&conv.LastSeenByUser2,
 			&conv.NumMessages,
@@ -92,7 +93,7 @@ func GetUsersConvs(ctx context.Context, db *sql.DB, userId *uid.ID) ([]*Convs, e
 }
 
 // GetConvUserIDs returns the conv with the given user ids
-func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID *uid.ID) (*Convs, error) {
+func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID *uid.NullID) (*Convs, error) {
 	convs, err := getConvs(ctx, db, "WHERE convs.user1_id = ? AND convs.user2_id = ?", user1ID, user2ID)
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func GetConvUserIDs(ctx context.Context, db *sql.DB, user1ID, user2ID *uid.ID) (
 	return convs[0], err
 }
 
-func GetConvID(ctx context.Context, db *sql.DB, id uid.ID) (*Convs, error) {
+func GetConvID(ctx context.Context, db *sql.DB, id uid.NullID) (*Convs, error) {
 	convs, err := getConvs(ctx, db, "WHERE convs.id = ?", id)
 	if err != nil {
 		return nil, err
@@ -122,7 +123,7 @@ func CreateConv(ctx context.Context, db *sql.DB, starter, target *User) (*Convs,
 	if err != nil {
 		return nil, err
 	}
-	if !muted {
+	if muted {
 		return nil, httperr.NewBadRequest("conv/user-muted", "User has muted you.")
 	}
 
@@ -145,7 +146,7 @@ func CreateConv(ctx context.Context, db *sql.DB, starter, target *User) (*Convs,
 		return nil, err
 	}
 
-	if err != nil && msql.IsErrDuplicateErr(err) {
+	if msql.IsErrDuplicateErr(err) {
 		return nil, &httperr.Error{
 			HTTPStatus: http.StatusConflict,
 			Code:       "duplicate-conv",
@@ -242,7 +243,7 @@ func getMessages(ctx context.Context, db *sql.DB, where string, args ...any) ([]
 
 // GetConvMessages returns all the messages that belong to the given conv
 func GetConvMessages(ctx context.Context, db *sql.DB, convId uid.ID) ([]*Message, error) {
-	msgs, err := getMessages(ctx, db, "WHERE msg.conv_id = ? ORDER BY MS", convId)
+	msgs, err := getMessages(ctx, db, "WHERE msg.conv_id = ? ORDER BY msg.sent_at", convId)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +254,7 @@ func GetConvMessages(ctx context.Context, db *sql.DB, convId uid.ID) ([]*Message
 }
 
 // GetMessage returns the message with the given id
-func GetMessage(ctx context.Context, db *sql.DB, id uid.ID) (*Message, error) {
+func GetMessage(ctx context.Context, db *sql.DB, id uid.NullID) (*Message, error) {
 	msgs, err := getMessages(ctx, db, "WHERE msg.id = ?", id)
 	if err != nil {
 		return nil, err
@@ -286,7 +287,7 @@ func CreateMessage(ctx context.Context, db *sql.DB, convId, senderId, receiverId
 		return nil, err
 	}
 
-	if err != nil && msql.IsErrDuplicateErr(err) {
+	if msql.IsErrDuplicateErr(err) {
 		return nil, &httperr.Error{
 			HTTPStatus: http.StatusConflict,
 			Code:       "duplicate-row",

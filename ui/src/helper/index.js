@@ -384,3 +384,7 @@ export function selectImageCopyURL(copyName = '', image = {}) {
   }
   return matches[0].url;
 }
+
+export function isEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}

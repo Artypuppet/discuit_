@@ -6,7 +6,6 @@ const WebSocketContext = createContext(null);
 export const WebSocketProvider = ({ children, isLoggedIn }) => {
   const [socket, setSocket] = useState(null);
   const [created, setCreated] = useState(false);
-  console.log('Inside websocket context.');
   const user = useSelector((state) => state.main.user);
   useEffect(() => {
     if (isLoggedIn && !created) {

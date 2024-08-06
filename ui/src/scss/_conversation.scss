@@ -1,0 +1,32 @@
+/* Styles for Flex Container */
+.flex-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  /* Sidebar styles */
+  .chat-sidebar {
+    flex: 1;
+    /* Add additional styles as needed */
+  }
+  
+  /* Main content styles */
+  .main-container {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Chat Container styles */
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Message List styles */
+  .message-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
