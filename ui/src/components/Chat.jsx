@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { chatOpenToggled } from '../slices/mainSlice';
 import { mfetch } from '../helper';
 import { ButtonClose } from './Button';
-import { convAdded, newConvAdded } from '../slices/conversationsSlice';
+import { convAdded, newConvAdded, updateHasNewMessage } from '../slices/conversationsSlice';
 import { useWebSocket } from '../WebSocketContext';
-import { isEmpty } from '../helper';
+import { isEmpty, mfetchjson } from '../helper';
 
 const Chat = () => {
   const dispatch = useDispatch();
@@ -23,10 +23,16 @@ const Chat = () => {
   useEffect(() => {
     (async function () {
       if (selectedConversation && isEmpty(newConv)) {
-        const resp = await fetch(`/api/users/${user.username}/convs/${selectedConversation.id}`);
-        const messages = await resp.json();
-        console.log(messages);
-        setMessages(messages);
+        try {
+          const messages = await mfetchjson(
+            `/api/users/${user.username}/convs/${selectedConversation.id}`
+          );
+          console.log(messages);
+          setMessages(messages);
+        } catch (error) {
+          console.log(error);
+          setMessages([]);
+        }
       }
     })();
   }, [selectedConversation]);
@@ -45,7 +51,11 @@ const Chat = () => {
     if (newMessage.type === 'New Conv') {
       dispatch(convAdded(newMessage.conv));
     } else if (newMessage.type === 'New Msg') {
-      setMessages((prevMessages) => [...prevMessages, newMessage.msg]);
+      if (selectedConversation && newMessage.convId == selectedConversation.id) {
+        setMessages((prevMessages) => [...prevMessages, newMessage.msg]);
+      } else {
+        dispatch(updateHasNewMessage(newMessage.msg));
+      }
     }
   };
 
@@ -102,8 +112,10 @@ const Chat = () => {
 
   const msgsRef = useRef(null);
   useEffect(() => {
-    msgsRef.current.scrollTo(0, msgsRef.current.scrollHeight);
-  }, []);
+    if (messages) {
+      msgsRef.current.scrollTo(0, msgsRef.current.scrollHeight);
+    }
+  }, [messages]);
 
   const textareaRef = useRef(null);
   //   const handleReplyInput = () => {
@@ -115,6 +127,7 @@ const Chat = () => {
   };
 
   const changeConversation = (selectedConv) => {
+    selectedConv.hasNewMessage = false;
     setSelectedConversation(selectedConv);
   };
 
@@ -136,7 +149,8 @@ const Chat = () => {
               key={index}
               onClick={() => changeConversation(convo)}
             >
-              {user.id == convo.user1Id ? convo.username2 : convo.username1}
+              <span>{user.id == convo.user1Id ? convo.username2 : convo.username1}</span>
+              {convo.hasNewMessage && <span className="chat-notification-dot"></span>}
             </button>
           ))}
         </div>

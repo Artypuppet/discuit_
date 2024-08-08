@@ -51,6 +51,16 @@
                 &:hover {
                     background: var(--color-lightgray);
                 }
+                .chat-notification-dot {
+                    position: absolute;
+                    top: -3px; /* Adjust as needed */
+                    right: -3px; /* Adjust as needed */
+                    width: 10px;
+                    height: 10px;
+                    background-color: orange;
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 2px white
+                }
             }
         }
         .chat-main-chat {
@@ -68,9 +78,6 @@
                     margin-right: 0.5rem;
                     min-height: var(--input-height);
                     height: var(--input-height);
-                }
-                button {
-                    flex: 0;
                 }
             }
         }
