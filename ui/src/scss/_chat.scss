@@ -51,6 +51,7 @@
                 &:hover {
                     background: var(--color-lightgray);
                 }
+                position: relative;
                 .chat-notification-dot {
                     position: absolute;
                     top: -3px; /* Adjust as needed */

@@ -3,7 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { chatOpenToggled } from '../slices/mainSlice';
 import { mfetch } from '../helper';
 import { ButtonClose } from './Button';
-import { convAdded, newConvAdded, updateHasNewMessage } from '../slices/conversationsSlice';
+import {
+  convAdded,
+  newConvAdded,
+  removeConv,
+  updateHasNewMessage,
+} from '../slices/conversationsSlice';
 import { useWebSocket } from '../WebSocketContext';
 import { isEmpty, mfetchjson } from '../helper';
 
@@ -51,7 +56,7 @@ const Chat = () => {
     if (newMessage.type === 'New Conv') {
       dispatch(convAdded(newMessage.conv));
     } else if (newMessage.type === 'New Msg') {
-      if (selectedConversation && newMessage.convId == selectedConversation.id) {
+      if (selectedConversation && newMessage.msg.convId === selectedConversation.id) {
         setMessages((prevMessages) => [...prevMessages, newMessage.msg]);
       } else {
         dispatch(updateHasNewMessage(newMessage.msg));
@@ -73,20 +78,14 @@ const Chat = () => {
       const resp = await mfetch(`api/users/${user.username}/convs`, postObj);
       const conv = await resp.json(); // get the body which represents the new conv.
 
-      // remove the old newConv object.
-      for (let i = 0; i < conversations.length; i++) {
-        if (newConv.user1Id == conversations[i] && newConv.user2Id == conversations[i].user2Id) {
-          conversations.splice(i, 1);
-          break;
-        }
-      }
+      dispatch(removeConv(newConv));
       // update our conversations list
       dispatch(convAdded(conv));
       // setting selected conv to returned conv object.
       setSelectedConversation(conv);
       // set the newConv to null as this conv is in our database.
       // done at last to avoid making a fetch call to get an empty list of conversations.
-      dispatch(newConvAdded(null));
+      dispatch(newConvAdded({}));
     }
 
     const newMessage = {
@@ -109,7 +108,7 @@ const Chat = () => {
     // resetting the message;
     setMessage('');
   };
-
+  // used to scroll down to the newest message.
   const msgsRef = useRef(null);
   useEffect(() => {
     if (messages) {
@@ -118,14 +117,15 @@ const Chat = () => {
   }, [messages]);
 
   const textareaRef = useRef(null);
-  //   const handleReplyInput = () => {
-  //     const height = textareaRef.current.scrollHeight;
-  //     textareaRef.current.style.height = `${height}px`;
-  //   };
+
+  // used to handle the change in text
   const handleChange = (event) => {
     setMessage(event.target.value);
   };
 
+  // used to handle the change in conversation.
+  // it resets hasNewMessage field to false since the now the user has viewed all the
+  // new features.
   const changeConversation = (selectedConv) => {
     selectedConv.hasNewMessage = false;
     setSelectedConversation(selectedConv);
