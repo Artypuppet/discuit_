@@ -191,7 +191,7 @@ func (s *Server) writeMessages(user *core.User, conn *websocket.Conn) {
 
 			err = conn.WriteJSON(message)
 			if err != nil {
-				log.Printf("Error writing message: %v", err)
+				log.Printf("Error writing message: %v, username: %s", err, user.Username)
 				break
 			}
 		case error:

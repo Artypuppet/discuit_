@@ -86,19 +86,27 @@ const Chat = () => {
       // set the newConv to null as this conv is in our database.
       // done at last to avoid making a fetch call to get an empty list of conversations.
       dispatch(newConvAdded({}));
+      const newMessage = {
+        convId: conv.id,
+        senderId: user.id,
+        receiverId: user.id === conv.user1Id ? conv.user2Id : conv.user1Id,
+        body: message,
+      };
+      socket.send(JSON.stringify(newMessage));
+      setMessages([...messages, newMessage]);
+    } else {
+      const newMessage = {
+        convId: selectedConversation.id,
+        senderId: user.id,
+        receiverId:
+          user.id == selectedConversation.user1Id
+            ? selectedConversation.user2Id
+            : selectedConversation.user1Id,
+        body: message,
+      };
+      socket.send(JSON.stringify(newMessage));
+      setMessages([...messages, newMessage]);
     }
-
-    const newMessage = {
-      convId: selectedConversation.id,
-      senderId: user.id,
-      receiverId:
-        user.id == selectedConversation.user1Id
-          ? selectedConversation.user2Id
-          : selectedConversation.user1Id,
-      body: message,
-    };
-    socket.send(JSON.stringify(newMessage));
-    setMessages([...messages, newMessage]);
   };
 
   const handleSend = async () => {

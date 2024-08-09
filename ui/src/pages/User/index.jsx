@@ -149,7 +149,7 @@ const User = () => {
         setHasConversation(true);
       }
     });
-  }, [user]);
+  }, [convs]);
 
   const [feedReloading, setFeedReloading] = useState(false);
   const fetchNextItems = async () => {
